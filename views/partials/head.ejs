@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'Web Development Learning Platform' %></title>
+  <% if (typeof seoDescription !== 'undefined' && seoDescription) { %>
+  <meta name="description" content="<%= seoDescription %>">
+  <% } %>
+  <!-- Open Graph defaults (will be overridden by lesson pages) -->
+  <meta property="og:title" content="<%= typeof title !== 'undefined' ? title : 'Web Development Learning Platform' %>">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="/css/main.css">
+  <% if (typeof extraStyles !== 'undefined') { %>
+    <%- extraStyles %>
+  <% } %>
+</head>
+<body>

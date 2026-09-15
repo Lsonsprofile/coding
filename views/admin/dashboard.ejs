@@ -1,0 +1,46 @@
+<%- include('../partials/head') %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin-nav') %>
+
+  <main class="admin-main">
+    <header class="admin-header">
+      <h1>Dashboard</h1>
+      <p>Welcome back, <%= currentUser.name %>.</p>
+    </header>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-number"><%= stats.totalPages %></span>
+        <span class="stat-label">Total Pages</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number"><%= stats.publishedPages %></span>
+        <span class="stat-label">Published</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number"><%= stats.draftPages %></span>
+        <span class="stat-label">Drafts</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number"><%= stats.totalUsers %></span>
+        <span class="stat-label">Users</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number"><%= stats.totalComments %></span>
+        <span class="stat-label">Comments</span>
+      </div>
+    </section>
+
+    <section class="admin-quick-actions">
+      <h2>Quick Actions</h2>
+      <div class="action-buttons">
+        <a href="/admin/pages/create" class="btn btn-primary">Create New Page</a>
+        <a href="/admin/pages" class="btn btn-secondary">Manage Pages</a>
+        <a href="/" class="btn btn-secondary" target="_blank">View Public Site</a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<%- include('../partials/footer') %>

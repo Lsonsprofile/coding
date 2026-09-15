@@ -1,0 +1,130 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<main id="main-content" class="container lesson-page">
+  <article>
+    <header class="lesson-header">
+      <% if (page.weekNumber) { %>
+        <span class="week-badge">Week <%= page.weekNumber %></span>
+      <% } %>
+      <h1><%= page.title %></h1>
+      <% if (page.description) { %>
+        <p class="lead"><%= page.description %></p>
+      <% } %>
+    </header>
+
+    <div class="lesson-content">
+      <% if (!contentBlocks || contentBlocks.length === 0) { %>
+        <p class="empty-state">This lesson has no content blocks yet.</p>
+      <% } else { %>
+        <% contentBlocks.forEach(function(block) { %>
+          <% const data = block.data || {}; %>
+
+          <% if (block.type === 'heading') { %>
+            <% const level = data.level || 'h2'; %>
+            <% if (level === 'h3') { %>
+              <h3 class="content-heading"><%= data.text %></h3>
+            <% } else if (level === 'h4') { %>
+              <h4 class="content-heading"><%= data.text %></h4>
+            <% } else { %>
+              <h2 class="content-heading"><%= data.text %></h2>
+            <% } %>
+
+          <% } else if (block.type === 'text') { %>
+            <div class="content-text">
+              <%- data.content %>
+            </div>
+
+          <% } else if (block.type === 'image') { %>
+            <figure class="content-image">
+              <% if (data.link) { %><a href="<%= data.link %>" target="_blank" rel="noopener"><% } %>
+                <img src="<%= data.imageUrl %>" alt="<%= data.altText || '' %>" loading="lazy">
+              <% if (data.link) { %></a><% } %>
+              <% if (data.caption) { %>
+                <figcaption><%= data.caption %></figcaption>
+              <% } %>
+            </figure>
+
+          <% } else if (block.type === 'button') { %>
+            <p class="content-button">
+              <a href="<%= data.url %>"
+                 class="btn btn-<%= data.style || 'primary' %>"
+                 <%= data.openInNewTab ? 'target="_blank" rel="noopener"' : '' %>>
+                <%= data.text %>
+              </a>
+            </p>
+
+          <% } else if (block.type === 'link') { %>
+            <p class="content-link">
+              <a href="<%= data.url %>" <%= data.openInNewTab ? 'target="_blank" rel="noopener"' : '' %>>
+                <%= data.text %>
+              </a>
+            </p>
+
+          <% } else if (block.type === 'code') { %>
+            <div class="content-code">
+              <% if (data.description) { %>
+                <p class="code-description"><%= data.description %></p>
+              <% } %>
+              <pre><code class="language-<%= data.language || 'html' %>"><%= data.code %></code></pre>
+            </div>
+
+          <% } else if (block.type === 'informationBox') { %>
+            <aside class="info-box info-box-<%= data.style || 'info' %>">
+              <% if (data.title) { %><h3 class="info-box-title"><%= data.title %></h3><% } %>
+              <div class="info-box-content"><%- data.content %></div>
+            </aside>
+
+          <% } else if (block.type === 'learningObjectives') { %>
+            <section class="learning-objectives">
+              <h2>Learning Objectives</h2>
+              <ul>
+                <% (data.objectives || []).forEach(function(obj) { %>
+                  <li><%= obj %></li>
+                <% }) %>
+              </ul>
+            </section>
+
+          <% } else if (block.type === 'activity') { %>
+            <section class="activity-block">
+              <h2><%= data.title || 'Activity' %></h2>
+              <% if (data.difficulty) { %>
+                <span class="difficulty">Difficulty: <%= data.difficulty %></span>
+              <% } %>
+              <div class="activity-instructions"><%- data.instructions %></div>
+            </section>
+
+          <% } else if (block.type === 'assignment') { %>
+            <section class="assignment-block">
+              <h2><%= data.title || 'Assignment' %></h2>
+              <div class="assignment-instructions"><%- data.instructions %></div>
+              <% if (data.requirements) { %>
+                <h3>Requirements</h3>
+                <div><%- data.requirements %></div>
+              <% } %>
+              <% if (data.submissionInstructions) { %>
+                <h3>How to Submit</h3>
+                <div><%- data.submissionInstructions %></div>
+              <% } %>
+            </section>
+
+          <% } else if (block.type === 'divider') { %>
+            <hr class="content-divider">
+
+          <% } else { %>
+            <!-- Fallback for unknown or not-yet-implemented block types -->
+            <div class="content-unknown">
+              <p><em>Unsupported content block type: <%= block.type %></em></p>
+            </div>
+          <% } %>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <nav class="lesson-nav" aria-label="Lesson navigation">
+      <a href="/lessons" class="btn btn-secondary">← All Lessons</a>
+    </nav>
+  </article>
+</main>
+
+<%- include('../partials/footer') %>
