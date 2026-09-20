@@ -1,21 +1,28 @@
 /**
- * Authentication controller.
- * Handles registration, login and logout.
- * Password hashing is done with bcryptjs (pure JS).
+ * Authentication controller – validated & sanitized inputs.
  */
 
 const bcrypt = require('bcryptjs');
 const userModel = require('../models/userModel');
+const pageModel = require('../models/pageModel');
+const {
+  sanitizeText,
+  cleanString,
+  isValidEmail,
+  normalizeEmail,
+} = require('../utils/sanitize');
 
 const SALT_ROUNDS = 12;
 
-/**
- * GET /register
- */
-function showRegister(req, res) {
-  // If already logged in, redirect away
+async function getAuthenticatedLanding(user) {
+  if (user && user.role === 'admin') return '/admin';
+  const pages = (await pageModel.findAllPages()).filter((page) => page.status === 'published');
+  return pages.length > 0 ? '/' : '/account';
+}
+
+async function showRegister(req, res, next) {
   if (req.session.user) {
-    return res.redirect('/');
+    try { return res.redirect(await getAuthenticatedLanding(req.session.user)); } catch (error) { return next(error); }
   }
   res.render('auth/register', {
     title: 'Register – Web Development Learning Platform',
@@ -25,27 +32,19 @@ function showRegister(req, res) {
   });
 }
 
-/**
- * POST /register
- */
 async function register(req, res, next) {
   try {
-    const { name, email, password, passwordConfirm } = req.body;
+    const name = sanitizeText(req.body.name, 100);
+    const email = normalizeEmail(req.body.email);
+    const password = cleanString(req.body.password, 128);
+    const passwordConfirm = cleanString(req.body.passwordConfirm, 128);
 
-    // Basic server-side validation
     const errors = [];
-    if (!name || name.trim().length < 2) {
-      errors.push('Name must be at least 2 characters.');
-    }
-    if (!email || !email.includes('@')) {
-      errors.push('A valid email address is required.');
-    }
-    if (!password || password.length < 8) {
-      errors.push('Password must be at least 8 characters.');
-    }
-    if (password !== passwordConfirm) {
-      errors.push('Passwords do not match.');
-    }
+    if (!name || name.length < 2) errors.push('Name must be at least 2 characters.');
+    if (!isValidEmail(email)) errors.push('A valid email address is required.');
+    if (!password || password.length < 8) errors.push('Password must be at least 8 characters.');
+    if (password.length > 128) errors.push('Password is too long.');
+    if (password !== passwordConfirm) errors.push('Passwords do not match.');
 
     if (errors.length > 0) {
       return res.status(400).render('auth/register', {
@@ -56,7 +55,6 @@ async function register(req, res, next) {
       });
     }
 
-    // Check if email already exists
     const existing = await userModel.findByEmail(email);
     if (existing) {
       return res.status(400).render('auth/register', {
@@ -67,10 +65,7 @@ async function register(req, res, next) {
       });
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    // Create user (first user can be made admin later if desired)
     const user = await userModel.createUser({
       name,
       email,
@@ -78,7 +73,6 @@ async function register(req, res, next) {
       role: 'user',
     });
 
-    // Log the user in immediately after registration
     req.session.user = {
       _id: user._id.toString(),
       name: user.name,
@@ -92,12 +86,9 @@ async function register(req, res, next) {
   }
 }
 
-/**
- * GET /login
- */
-function showLogin(req, res) {
+async function showLogin(req, res, next) {
   if (req.session.user) {
-    return res.redirect('/');
+    try { return res.redirect(await getAuthenticatedLanding(req.session.user)); } catch (error) { return next(error); }
   }
   res.render('auth/login', {
     title: 'Login – Web Development Learning Platform',
@@ -107,14 +98,12 @@ function showLogin(req, res) {
   });
 }
 
-/**
- * POST /login
- */
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const password = cleanString(req.body.password, 128);
 
-    if (!email || !password) {
+    if (!isValidEmail(email) || !password) {
       return res.status(400).render('auth/login', {
         title: 'Login – Web Development Learning Platform',
         pageTitle: 'Login',
@@ -124,6 +113,7 @@ async function login(req, res, next) {
     }
 
     const user = await userModel.findByEmail(email);
+    // Generic message – do not reveal whether email exists
     if (!user) {
       return res.status(401).render('auth/login', {
         title: 'Login – Web Development Learning Platform',
@@ -143,7 +133,6 @@ async function login(req, res, next) {
       });
     }
 
-    // Successful login – store minimal user info in session
     req.session.user = {
       _id: user._id.toString(),
       name: user.name,
@@ -151,8 +140,7 @@ async function login(req, res, next) {
       role: user.role,
     };
 
-    // Redirect to the page they originally wanted, or home
-    const redirectTo = req.session.returnTo || '/';
+    const redirectTo = req.session.returnTo || await getAuthenticatedLanding(req.session.user);
     delete req.session.returnTo;
     res.redirect(redirectTo);
   } catch (err) {
@@ -160,14 +148,9 @@ async function login(req, res, next) {
   }
 }
 
-/**
- * POST /logout
- */
 function logout(req, res) {
   req.session.destroy((err) => {
-    if (err) {
-      console.error('Session destroy error:', err);
-    }
+    if (err) console.error('Session destroy error:', err);
     res.redirect('/');
   });
 }

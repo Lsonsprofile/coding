@@ -25,6 +25,12 @@ const adminRoutes = require('./src/routes/adminRoutes');
 
 const app = express();
 
+// Required on Render / reverse proxies so secure cookies and req.ip work
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
+
 // ---------------------------------------------------------------------------
 // Security & request parsing middleware
 // ---------------------------------------------------------------------------
@@ -52,13 +58,15 @@ app.set('views', path.join(__dirname, 'views'));
 // Session configuration (must come before any routes that use req.session)
 // ---------------------------------------------------------------------------
 app.use(session({
+  name: 'webdev.sid', // custom name instead of default connect.sid
   secret: process.env.SESSION_SECRET || 'dev-only-insecure-secret-change-me',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    httpOnly: true,                               // not accessible from JS
+    sameSite: 'lax',                              // mitigates CSRF
+    maxAge: 1000 * 60 * 60 * 24 * 7,              // 7 days
   },
   // Note: For production we will later add a Mongo-backed session store.
   // For now the default MemoryStore is acceptable in development.
@@ -68,34 +76,79 @@ app.use(session({
 // Make session user available to all views (res.locals)
 // ---------------------------------------------------------------------------
 app.use((req, res, next) => {
+  res.locals.currentPath = req.path;
   res.locals.currentUser = req.session.user || null;
   res.locals.isAuthenticated = Boolean(req.session.user);
-  res.locals.isAdmin = req.session.user && req.session.user.role === 'admin';
+  res.locals.isAdmin = Boolean(req.session.user && req.session.user.role === 'admin');
+  // Safe defaults so EJS never hits "X is not defined"
+  res.locals.comments = res.locals.comments || [];
+  res.locals.contentBlocks = res.locals.contentBlocks || [];
+  res.locals.pages = res.locals.pages || [];
+  res.locals.success = res.locals.success || null;
+  res.locals.error = res.locals.error || null;
+  res.locals.commentError = res.locals.commentError || null;
+  res.locals.isPreview = false;
+  res.locals.isPlaceholder = false;
+  res.locals.seoDescription = res.locals.seoDescription || '';
+  next();
+});
+
+// Load editable header/footer for all views (never fail the request)
+const settingsModel = require('./src/models/settingsModel');
+const pageModel = require('./src/models/pageModel');
+app.use(async (req, res, next) => {
+  try {
+    const [header, footer, pages] = await Promise.all([
+      settingsModel.getHeader(),
+      settingsModel.getFooter(),
+      pageModel.findAllPages(),
+    ]);
+    const validSlugs = new Set((pages || []).filter((page) => page.status === 'published').map((page) => page.slug));
+    res.locals.adminPageCount = (pages || []).length;
+    res.locals.publishedPageCount = validSlugs.size;
+    const storedHeader = header || settingsModel.DEFAULTS.header;
+    const navItems = (storedHeader.navItems || [])
+      .filter((item) => item.url && validSlugs.has(item.url === '/' ? 'home' : item.url.slice(1)))
+      .map((item) => item.type === 'dropdown'
+        ? { ...item, children: (item.children || []).filter((child) => child.url === '/' || validSlugs.has(String(child.url || '').replace(/^\//, ''))) }
+        : item)
+      .filter((item) => item.type !== 'dropdown' || item.children.length > 0)
+      .filter((item, index, items) => items.findIndex((candidate) => candidate.url === item.url) === index);
+    res.locals.siteHeader = { ...storedHeader, navItems };
+    res.locals.siteFooter = footer || settingsModel.DEFAULTS.footer;
+  } catch (e) {
+    console.error('Settings load error:', e.message);
+    res.locals.siteHeader = settingsModel.DEFAULTS.header;
+    res.locals.siteFooter = settingsModel.DEFAULTS.footer;
+  }
   next();
 });
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.get('/', (req, res) => {
-  res.render('public/home', {
-    title: 'Web Development Learning Platform',
-    pageTitle: 'Home',
-  });
-});
+const pageController = require('./src/controllers/pageController');
 
-app.get('/about', (req, res) => {
-  res.render('public/about', {
-    title: 'About – Web Development Learning Platform',
-    pageTitle: 'About',
-  });
-});
+// Site pages driven by CMS (edit in Admin → Pages, slugs: home, about, contact)
+app.get('/', pageController.home);
+app.get('/home', (req, res) => res.redirect(301, '/'));
+app.get('/about', pageController.about);
+app.get('/contact', pageController.contact);
 
-app.get('/contact', (req, res) => {
-  res.render('public/contact', {
-    title: 'Contact – Web Development Learning Platform',
+// Optional contact form POST (simple thank-you for now)
+app.post('/contact', (req, res) => {
+  res.render('public/site-page', {
+    title: 'Message received',
     pageTitle: 'Contact',
+    page: { title: 'Thank you', slug: 'contact', description: 'Your message has been received. We will get back to you soon.' },
+    contentBlocks: [],
+    isPlaceholder: false,
   });
+});
+
+// Health check for Render / uptime monitors
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true, env: process.env.NODE_ENV || 'development' });
 });
 
 // Public lesson routes (list + single lesson by slug)

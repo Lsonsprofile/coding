@@ -1,10 +1,10 @@
 /**
  * Application entry point.
  * Connects to MongoDB, then starts the HTTP server.
- * Separating this from app.js allows the Express app to be
- * imported for testing without binding to a port.
  */
 
+const fs = require('fs');
+const path = require('path');
 const app = require('./app');
 const { connect } = require('./src/db/connect');
 
@@ -12,11 +12,17 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
-    // Establish database connection before accepting requests
+    // Ensure upload directory exists (Render's filesystem is ephemeral)
+    const uploadDir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
     await connect();
 
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+    // Bind to 0.0.0.0 so Render (and other hosts) can reach the service
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {

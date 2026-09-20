@@ -1,0 +1,62 @@
+<%- include('../partials/head') %>
+<% if (!page.settings || page.settings.showHeader !== false) { %><%- include('../partials/nav') %><% } %>
+<% if (typeof isPreview !== 'undefined' && isPreview) { %>
+  <div class="preview-banner">Preview mode — this page may be a draft and is only visible to admins.</div>
+<% } %>
+
+<main id="main-content" class="container site-page">
+  <article>
+    <header class="lesson-header">
+      <h1><%= page.title %></h1>
+      <% if (page.description) { %>
+        <p class="lead"><%= page.description %></p>
+      <% } %>
+    </header>
+
+    <div class="lesson-content">
+      <% if (typeof isPlaceholder !== 'undefined' && isPlaceholder) { %>
+        <div class="empty-state">
+          <p>This page has no content yet.</p>
+          <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+            <p>As an admin, create a page with slug <code><%= page.slug %></code> in the admin panel, add content blocks, and publish it.</p>
+            <a href="/admin/pages/create" class="btn btn-primary">Create Page</a>
+          <% } %>
+        </div>
+      <% } else if (typeof contentBlocks === "undefined" || !contentBlocks || contentBlocks.length === 0) { %>
+        <div class="empty-state">
+          <p>No content blocks on this page yet.</p>
+          <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+            <a href="/admin/pages" class="btn btn-primary">Manage Pages</a>
+          <% } %>
+        </div>
+      <% } else { %>
+        <% contentBlocks.forEach(function(block) { %>
+          <%- include('../partials/render-block', { block: block, root: true }) %>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <% if (page.slug === 'contact' && !(typeof isPlaceholder !== 'undefined' && isPlaceholder)) { %>
+      <section class="contact-form-section">
+        <h2>Send a message</h2>
+        <form class="contact-form" method="POST" action="/contact" novalidate>
+          <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </form>
+      </section>
+    <% } %>
+  </article>
+</main>
+
+<% if (!page.settings || page.settings.showFooter !== false) { %><%- include('../partials/footer') %><% } %>

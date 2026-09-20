@@ -10,13 +10,14 @@
     </p>
   </header>
 
-  <% if (!pages || pages.length === 0) { %>
+  <% const lessonPages = (typeof pages !== "undefined" && pages) ? pages : []; %>
+  <% if (lessonPages.length === 0) { %>
     <div class="empty-state">
       <p>No published lessons yet. An administrator needs to create and publish pages.</p>
     </div>
   <% } else { %>
     <div class="lesson-grid">
-      <% pages.forEach(function(page) { %>
+      <% lessonPages.forEach(function(page) { %>
         <article class="lesson-card">
           <% if (page.weekNumber) { %>
             <span class="week-badge">Week <%= page.weekNumber %></span>

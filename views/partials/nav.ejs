@@ -1,7 +1,22 @@
+<%
+  const header = typeof siteHeader !== 'undefined' && siteHeader ? siteHeader : {
+    logoText: 'WebDev Learn',
+    logoImage: '',
+    navItems: [
+      { label: 'Home', url: '/', type: 'link' },
+      { label: 'Lessons', url: '/lessons', type: 'link' },
+      { label: 'About', url: '/about', type: 'link' },
+      { label: 'Contact', url: '/contact', type: 'link' },
+    ],
+  };
+%>
 <header class="site-header">
   <div class="container header-inner">
     <a href="/" class="logo" aria-label="Home">
-      <span class="logo-text">WebDev Learn</span>
+      <% if (header.logoImage) { %>
+        <img src="<%= header.logoImage %>" alt="<%= header.logoText || 'Logo' %>" class="logo-img">
+      <% } %>
+      <span class="logo-text"><%= header.logoText || 'WebDev Learn' %></span>
     </a>
 
     <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" id="navToggle">
@@ -10,24 +25,35 @@
 
     <nav class="main-nav" id="mainNav" aria-label="Main navigation">
       <ul class="nav-list">
-        <li><a href="/" class="nav-link">Home</a></li>
-        <li><a href="/lessons" class="nav-link">Lessons</a></li>
-        <li><a href="/about" class="nav-link">About</a></li>
-        <li><a href="/contact" class="nav-link">Contact</a></li>
+        <% (header.navItems || []).forEach(function(item) { %>
+          <% if (item.type === 'dropdown' && item.children && item.children.length) { %>
+            <li class="nav-item-dropdown">
+              <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false">
+                <%= item.label %> <span aria-hidden="true">▾</span>
+              </button>
+              <ul class="nav-dropdown">
+                <% item.children.forEach(function(child) { %>
+                  <li><a href="<%= child.url %>" class="nav-dropdown-link"><%= child.label %></a></li>
+                <% }) %>
+              </ul>
+            </li>
+          <% } else { %>
+            <li><a href="<%= item.url || '#' %>" class="nav-link"><%= item.label %></a></li>
+          <% } %>
+        <% }) %>
 
         <% if (isAuthenticated) { %>
           <% if (isAdmin) { %>
             <li><a href="/admin" class="nav-link">Dashboard</a></li>
           <% } %>
-          <li><a href="/account" class="nav-link">My Account</a></li>
           <li>
             <form action="/logout" method="POST" class="inline-form">
               <button type="submit" class="nav-link btn-link">Logout</button>
             </form>
           </li>
         <% } else { %>
-          <li><a href="/login" class="nav-link">Login</a></li>
-          <li><a href="/register" class="nav-link btn-primary-nav">Register</a></li>
+          <li><a href="/login" class="nav-link <%= currentPath === '/login' ? 'nav-link-active' : '' %>">Login</a></li>
+          <li><a href="/register" class="nav-link <%= currentPath === '/register' ? 'btn-primary-nav nav-link-active' : 'btn-primary-nav' %>">Register</a></li>
         <% } %>
       </ul>
     </nav>

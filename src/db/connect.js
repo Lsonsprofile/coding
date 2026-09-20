@@ -64,6 +64,10 @@ async function ensureIndexes(database) {
   await database.collection('comments').createIndex({ pageId: 1 });
   // Optional: compound index for ordered content retrieval
   await database.collection('content').createIndex({ pageId: 1, order: 1 });
+  await database.collection('content').createIndex({ parentId: 1 });
+  await database.collection('comments').createIndex({ userId: 1 });
+  await database.collection('media').createIndex({ createdAt: -1 });
+  await database.collection('settings').createIndex({ key: 1 }, { unique: true });
 }
 
 /**

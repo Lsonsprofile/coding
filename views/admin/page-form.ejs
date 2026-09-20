@@ -1,0 +1,82 @@
+<%- include('../partials/head') %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin-nav') %>
+
+  <main class="admin-main">
+    <header class="admin-header">
+      <h1><%= isEdit ? 'Edit Page' : 'Create Page' %></h1>
+    </header>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="<%= isEdit ? '/admin/pages/' + page._id : '/admin/pages' %>" method="POST" class="admin-form">
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input type="text" id="title" name="title" required
+               value="<%= formData.title || (page && page.title) || '' %>">
+      </div>
+
+      <div class="form-group">
+        <label for="slug">Slug * (URL)</label>
+        <input type="text" id="slug" name="slug"
+               value="<%= formData.slug || (page && page.slug) || '' %>"
+               placeholder="auto-generated-from-title">
+        <small class="form-hint">Only lowercase letters, numbers and hyphens.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="3"><%= formData.description || (page && page.description) || '' %></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="weekNumber">Week Number</label>
+          <input type="number" id="weekNumber" name="weekNumber" min="1" max="52"
+                 value="<%= formData.weekNumber || (page && page.weekNumber) || '' %>">
+        </div>
+        <div class="form-group">
+          <label for="category">Category</label>
+          <input type="text" id="category" name="category"
+                 value="<%= formData.category || (page && page.category) || '' %>"
+                 placeholder="HTML, CSS, JavaScript…">
+        </div>
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="draft" <%= (formData.status || (page && page.status)) === 'draft' ? 'selected' : '' %>>Draft</option>
+            <option value="published" <%= (formData.status || (page && page.status)) === 'published' ? 'selected' : '' %>>Published</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="seoTitle">SEO Title</label>
+        <input type="text" id="seoTitle" name="seoTitle"
+               value="<%= formData.seoTitle || (page && page.seoTitle) || '' %>">
+      </div>
+
+      <div class="form-group">
+        <label for="seoDescription">SEO Description</label>
+        <textarea id="seoDescription" name="seoDescription" rows="2"><%= formData.seoDescription || (page && page.seoDescription) || '' %></textarea>
+      </div>
+
+      <fieldset class="page-visibility-settings">
+        <legend>Global components</legend>
+        <label><input type="checkbox" name="showHeader" value="true" checked> Show global header</label>
+        <label><input type="checkbox" name="showFooter" value="true" checked> Show global footer</label>
+        <label><input type="checkbox" name="showSidebar" value="true"> Show page sidebar</label>
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary"><%= isEdit ? 'Save Changes' : 'Create Page' %></button>
+        <a href="/admin/pages" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </main>
+</div>
+
+<%- include('../partials/footer') %>

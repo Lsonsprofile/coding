@@ -1,55 +1,65 @@
 /**
  * Public lesson controller.
- * Handles listing published lessons and rendering a single lesson by slug.
- * All data comes from MongoDB via the page model.
  */
 
 const pageModel = require('../models/pageModel');
+const commentModel = require('../models/commentModel');
 
-/**
- * GET /lessons
- * List all published lessons, grouped or sorted by weekNumber.
- */
 async function listLessons(req, res, next) {
   try {
-    const pages = await pageModel.findPublishedPages();
+    let pages = [];
+    try {
+      pages = await pageModel.findPublishedPages();
+    } catch (e) {
+      console.error('listLessons pages error:', e.message);
+    }
 
     res.render('public/lessons', {
       title: 'Lessons – Web Development Learning Platform',
       pageTitle: 'Lessons',
-      pages,
+      pages: pages || [],
     });
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * GET /lesson/:slug
- * Render a single published lesson with all its visible content blocks.
- */
 async function viewLesson(req, res, next) {
   try {
     const { slug } = req.params;
 
     const page = await pageModel.findPublishedBySlug(slug);
     if (!page) {
-      return res.status(404).render('public/404', {
-        title: 'Lesson Not Found',
-        pageTitle: '404',
-      });
+      return res.redirect('/login');
     }
 
-    const contentBlocks = await pageModel.findContentByPageId(page._id, {
-      onlyVisible: true,
-    });
+    let contentBlocks = [];
+    try {
+      contentBlocks = await pageModel.findContentByPageId(page._id, {
+        onlyVisible: true,
+        asTree: true,
+      });
+    } catch (e) {
+      console.error('contentBlocks error:', e.message);
+      contentBlocks = [];
+    }
+
+    let comments = [];
+    try {
+      comments = await commentModel.findByPageId(page._id, { status: 'visible' });
+    } catch (e) {
+      console.error('comments error:', e.message);
+      comments = [];
+    }
 
     res.render('public/lesson', {
       title: page.seoTitle || page.title,
       pageTitle: page.title,
-      seoDescription: page.seoDescription || page.description,
+      seoDescription: page.seoDescription || page.description || '',
       page,
-      contentBlocks,
+      contentBlocks: contentBlocks || [],
+      comments: comments || [],
+      commentError: req.query.error || null,
     });
   } catch (err) {
     next(err);

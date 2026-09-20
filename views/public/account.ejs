@@ -1,0 +1,36 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+
+<main id="main-content" class="container auth-page">
+  <div class="auth-card" style="max-width: 28rem;">
+    <h1>My Account</h1>
+    <p class="auth-subtitle">Manage your profile information.</p>
+
+    <% if (success === 'updated') { %>
+      <div class="alert alert-success">Profile updated.</div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/account" method="POST" class="auth-form">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required minlength="2"
+               value="<%= user.name %>">
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" value="<%= user.email %>" disabled>
+        <small class="form-hint">Email cannot be changed here.</small>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <input type="text" value="<%= user.role %>" disabled>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save changes</button>
+    </form>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

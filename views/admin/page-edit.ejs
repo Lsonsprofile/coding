@@ -1,0 +1,240 @@
+<%- include('../partials/head') %>
+
+<div class="admin-layout page-editor-layout">
+  <%- include('../partials/admin-nav') %>
+
+  <main class="admin-main page-editor-main">
+    <div class="editor-topbar">
+      <div class="editor-app-name"><span class="editor-app-mark">W</span><strong>Web Builder</strong></div>
+      <div class="editor-topbar-actions">
+        <select class="editor-device" data-editor-device aria-label="Canvas preview size">
+          <option value="desktop">Desktop</option>
+          <option value="tablet">Tablet</option>
+          <option value="mobile">Mobile</option>
+        </select>
+        <button type="button" class="editor-icon-button" data-editor-undo title="Undo" aria-label="Undo">↶</button>
+        <button type="button" class="editor-icon-button" data-editor-redo title="Redo" aria-label="Redo">↷</button>
+        <span class="editor-divider"></span>
+        <button type="submit" form="page-settings-form" class="btn btn-secondary btn-sm">Save</button>
+        <a href="/admin/pages/<%= page._id %>/preview" target="_blank" class="btn btn-secondary btn-sm">Preview</a>
+        <button type="submit" form="page-settings-form" name="status" value="published" class="btn btn-primary btn-sm">Publish</button>
+      </div>
+    </div>
+    <header class="admin-header">
+      <div>
+        <p class="editor-breadcrumb">Pages <span aria-hidden="true">/</span> <strong><%= page.title %></strong></p>
+        <h1 class="editor-page-title"><%= page.title %></h1>
+      </div>
+      <div class="header-actions">
+        <% if (page.status === 'published') { %>
+          <a href="/lesson/<%= page.slug %>" target="_blank" class="btn btn-secondary">View Live</a>
+        <% } %>
+        <a href="/admin/pages" class="btn btn-secondary">← All Pages</a>
+      </div>
+    </header>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <% if (success === 'created') { %>Page created. Now add content blocks below.<% } %>
+        <% if (success === 'updated') { %>Page metadata saved.<% } %>
+        <% if (success === 'block-added') { %>Content block added.<% } %>
+        <% if (success === 'block-updated') { %>Content block updated.<% } %>
+        <% if (success === 'block-deleted') { %>Content block deleted.<% } %>
+        <% if (success === 'block-duplicated') { %>Content block duplicated.<% } %>
+      </div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <!-- Page metadata -->
+    <details class="page-settings-drawer">
+      <summary>Page settings <span>Title, URL, status and SEO</span></summary>
+      <form id="page-settings-form" action="/admin/pages/<%= page._id %>" method="POST" class="admin-form">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input type="text" id="title" name="title" required value="<%= page.title %>">
+        </div>
+        <div class="form-group">
+          <label for="slug">Slug *</label>
+          <input type="text" id="slug" name="slug" required value="<%= page.slug %>">
+        </div>
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="2"><%= page.description || '' %></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="weekNumber">Week</label>
+            <input type="number" id="weekNumber" name="weekNumber" value="<%= page.weekNumber || '' %>">
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" value="<%= page.category || '' %>">
+          </div>
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="draft" <%= page.status === 'draft' ? 'selected' : '' %>>Draft</option>
+              <option value="published" <%= page.status === 'published' ? 'selected' : '' %>>Published</option>
+              <option value="archived" <%= page.status === 'archived' ? 'selected' : '' %>>Archived</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="seoTitle">SEO Title</label>
+          <input type="text" id="seoTitle" name="seoTitle" value="<%= page.seoTitle || '' %>">
+        </div>
+        <div class="form-group">
+          <label for="seoDescription">SEO Description</label>
+          <textarea id="seoDescription" name="seoDescription" rows="2"><%= page.seoDescription || '' %></textarea>
+        </div>
+        <fieldset class="page-visibility-settings">
+          <legend>Global components</legend>
+          <label><input type="hidden" name="showHeader" value="false"><input type="checkbox" name="showHeader" value="true" <%= !page.settings || page.settings.showHeader !== false ? 'checked' : '' %>> Show global header</label>
+          <label><input type="hidden" name="showFooter" value="false"><input type="checkbox" name="showFooter" value="true" <%= !page.settings || page.settings.showFooter !== false ? 'checked' : '' %>> Show global footer</label>
+          <label><input type="hidden" name="showSidebar" value="false"><input type="checkbox" name="showSidebar" value="true" <%= page.settings && page.settings.showSidebar ? 'checked' : '' %>> Show page sidebar</label>
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Save Page Settings</button>
+      </form>
+    </details>
+
+    <div class="builder-workspace">
+      <aside class="component-library" aria-label="Component library">
+        <div class="library-heading">
+          <p class="eyebrow">Components</p>
+          <h2>Build your page</h2>
+          <p>Drag a component into a container or click to add it to the page.</p>
+        </div>
+        <label class="component-search">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" placeholder="Search components" data-component-search>
+        </label>
+        <div class="component-groups">
+          <% const componentCategories = ['text', 'media', 'layout', 'navigation', 'interface', 'learning', 'marketing', 'utility']; %>
+          <% componentCategories.forEach(function(category) { %>
+            <section class="component-group" data-component-group="<%= category %>">
+              <h3><%= category %></h3>
+              <% Object.keys(componentRegistry || {}).forEach(function(type) { %>
+                <% const definition = componentRegistry[type]; %>
+                <% if (definition.category === category) { %>
+                  <button type="button" class="component-item" draggable="true" data-component-type="<%= type %>"><span><%= definition.label.charAt(0) %></span> <%= definition.label %></button>
+                <% } %>
+              <% }); %>
+            </section>
+          <% }); %>
+        </div>
+      </aside>
+
+      <!-- Content blocks -->
+      <section class="admin-section page-builder">
+      <div class="builder-heading">
+        <div>
+          <p class="eyebrow">Visual page builder</p>
+          <h2>Build your page</h2>
+          <p class="builder-description">Start with a container, then add text, links, images, lessons, or layouts inside it. Changes to blocks save automatically.</p>
+        </div>
+        <span class="save-state" data-builder-status>Ready</span>
+      </div>
+      <div class="canvas-selection-toolbar" data-selection-toolbar hidden>
+        <span><strong data-selection-count>0</strong> selected</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-wrap-selection>Wrap in container</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-clear-selection>Clear</button>
+      </div>
+      <div class="builder-toolbar">
+        <div class="builder-toolbar-main">
+          <span class="toolbar-label">Add to canvas</span>
+          <form action="/admin/pages/<%= page._id %>/content" method="POST" class="add-block-form">
+            <select name="type" required aria-label="Choose a block to add">
+              <option value="">Choose a block…</option>
+              <optgroup label="Containers">
+                <option value="section">Section</option>
+                <option value="grid">Grid</option>
+                <option value="container">Container</option>
+                <option value="row">Row</option>
+                <option value="column">Column</option>
+              </optgroup>
+              <optgroup label="Content">
+                <option value="heading">Heading</option>
+                <option value="text">Text / Rich Text</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="link">Link</option>
+                <option value="button">Button</option>
+                <option value="list">List</option>
+                <option value="code">Code Block</option>
+                <option value="quote">Quote</option>
+                <option value="divider">Divider</option>
+              </optgroup>
+              <optgroup label="Components">
+                <option value="card">Card</option>
+                <option value="hero">Hero</option>
+                <option value="cta">Call To Action</option>
+                <option value="informationBox">Information Box</option>
+                <option value="learningObjectives">Learning Objectives</option>
+                <option value="activity">Activity</option>
+                <option value="assignment">Assignment</option>
+                <option value="quiz">Quiz</option>
+                <option value="advert">Advert</option>
+                <option value="spacer">Spacer</option>
+              </optgroup>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Add block</button>
+          </form>
+        </div>
+        <div class="builder-help">
+          <span class="builder-tip"><strong>Tip</strong> Use Grid for cards and Row for side-by-side content.</span>
+        </div>
+      </div>
+
+      <div class="section-header builder-list-heading">
+        <h3>Your canvas</h3>
+      </div>
+
+      <div class="canvas-global-band"><span>Global Header</span><small>Managed in Header &amp; Footer settings</small></div>
+
+      <% const safeBlocks = (typeof contentBlocks !== 'undefined' && Array.isArray(contentBlocks)) ? contentBlocks : []; %>
+      <details class="layer-tree" open>
+        <summary>Page outline</summary>
+        <div class="layer-tree-list">
+          <% function renderOutline(nodes) { %>
+            <% (nodes || []).forEach(function(node) { %>
+              <button type="button" class="layer-tree-item" data-outline-id="<%= node._id %>"><span aria-hidden="true"><%= node.children && node.children.length ? '▾' : '•' %></span><%= node.type %></button>
+              <% if (node.children && node.children.length) { %><div class="layer-tree-children"><% renderOutline(node.children); %></div><% } %>
+            <% }); %>
+          <% } %>
+          <% renderOutline(safeBlocks); %>
+        </div>
+      </details>
+      <% if (safeBlocks.length === 0) { %>
+        <div class="empty-state" data-page-builder>
+          <p class="empty-builder-title">Start building this page</p>
+          <p>Choose a container or any component from the library. New content will be added to the page canvas.</p>
+          <button type="button" class="btn btn-primary" data-add-element>+ Add Element</button>
+        </div>
+      <% } else { %>
+        <div class="block-list" data-page-builder>
+          <% safeBlocks.forEach(function(block) { %>
+            <%- include('../partials/admin-block', { block: block, page: page, depth: 0 }) %>
+          <% }) %>
+        </div>
+      <% } %>
+      <div class="canvas-global-band"><span>Global Footer</span><small>Managed in Header &amp; Footer settings</small></div>
+      </section>
+
+      <aside class="properties-panel" aria-label="Properties">
+        <div class="properties-heading">
+          <p class="eyebrow">Properties</p>
+          <h2 data-selected-title>Select a component</h2>
+          <p data-selected-help>Choose a block on the canvas to edit its content, layout and animation.</p>
+        </div>
+        <div class="properties-content" data-properties-panel>
+          <div class="properties-empty"><span>↖</span><p>Select a component in the canvas to configure it here.</p></div>
+        </div>
+      </aside>
+    </div>
+
+  </main>
+</div>
+
+<%- include('../partials/footer') %>

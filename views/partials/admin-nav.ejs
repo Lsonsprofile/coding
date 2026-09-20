@@ -1,18 +1,25 @@
-<aside class="admin-sidebar">
+<aside class="admin-sidebar editor-sidebar">
   <div class="admin-brand">
-    <a href="/admin">Admin</a>
+    <a href="/admin"><span class="editor-brand-mark">W</span><span>Web Builder</span></a>
   </div>
   <nav aria-label="Admin navigation">
     <ul class="admin-nav-list">
-      <li><a href="/admin" class="admin-nav-link">Dashboard</a></li>
-      <li><a href="/admin/pages" class="admin-nav-link">Pages</a></li>
-      <li><a href="/admin/pages/create" class="admin-nav-link">Create Page</a></li>
-      <li><a href="/admin/comments" class="admin-nav-link">Comments</a></li>
-      <li><a href="/admin/users" class="admin-nav-link">Users</a></li>
-      <li><a href="/" class="admin-nav-link" target="_blank">View Website</a></li>
+      <li><a href="/admin" class="admin-nav-link <%= currentPath === '/admin' ? 'active' : '' %>"><span aria-hidden="true">⌂</span><span>Dashboard</span></a></li>
+      <% if (typeof adminPageCount === 'undefined' || adminPageCount > 0) { %>
+        <li><a href="/admin/pages" class="admin-nav-link <%= currentPath === '/admin/pages' || currentPath === '/admin/pages/create' ? 'active' : '' %>"><span aria-hidden="true">▣</span><span>Pages</span></a></li>
+        <li><a href="/admin/home" class="admin-nav-link <%= currentPath === '/admin/home' || (typeof page !== 'undefined' && page && page.slug === 'home') ? 'active' : '' %>"><span aria-hidden="true">⌂</span><span>Home Editor</span></a></li>
+      <% } %>
+      <li><a href="/account" class="admin-nav-link <%= currentPath === '/account' ? 'active' : '' %>"><span aria-hidden="true">♙</span><span>Profile</span></a></li>
+      <li><a href="/admin/settings" class="admin-nav-link <%= currentPath === '/admin/settings' ? 'active' : '' %>"><span aria-hidden="true">⚙</span><span>Settings</span></a></li>
+      <% if (typeof adminPageCount !== 'undefined' && adminPageCount === 0) { %>
+        <li><a href="/login" class="admin-nav-link"><span aria-hidden="true">↪</span><span>Login</span></a></li>
+      <% } %>
+      <% if (typeof publishedPageCount === 'undefined' || publishedPageCount > 0) { %>
+        <li><a href="/" class="admin-nav-link" target="_blank"><span aria-hidden="true">◉</span><span>Preview Site</span></a></li>
+      <% } %>
       <li>
         <form action="/logout" method="POST" class="inline-form">
-          <button type="submit" class="admin-nav-link btn-link">Logout</button>
+          <button type="submit" class="admin-nav-link btn-link"><span aria-hidden="true">↪</span><span>Logout</span></button>
         </form>
       </li>
     </ul>
